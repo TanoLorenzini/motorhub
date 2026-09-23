@@ -1,38 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import CompartirBoton from "@/components/CompartirBoton";
 
 function normalizar(texto: string) {
   return texto
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
-}
-
-function generarLinkIcs(evento: {
-  nombre: string;
-  fecha: string;
-  lugar: string;
-  descripcion: string;
-}) {
-  const fechaSinGuiones = evento.fecha.replace(/-/g, "");
-
-  const escapar = (texto: string) =>
-    (texto ?? "").replace(/,/g, "\\,").replace(/;/g, "\\;");
-
-  const contenido = [
-    "BEGIN:VCALENDAR",
-    "VERSION:2.0",
-    "BEGIN:VEVENT",
-    "DTSTART;VALUE=DATE:" + fechaSinGuiones,
-    "SUMMARY:" + escapar(evento.nombre),
-    "LOCATION:" + escapar(evento.lugar),
-    "DESCRIPTION:" + escapar(evento.descripcion),
-    "END:VEVENT",
-    "END:VCALENDAR",
-  ].join("\r\n");
-
-  return "data:text/calendar;charset=utf8," + encodeURIComponent(contenido);
 }
 
 export default async function Eventos({
@@ -164,7 +139,11 @@ export default async function Eventos({
                     {evento.descripcion}
                   </p>
 
-                  {!yaPaso && <a href={generarLinkIcs(evento)} download={evento.nombre + ".ics"} className="inline-block bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold uppercase px-4 py-2 rounded transition">Agendar</a>}
+                  <CompartirBoton
+                    titulo={evento.nombre}
+                    texto={`${evento.nombre} - ${fechaFormateada} en ${evento.lugar}. ¡Nos vemos ahí!`}
+                    ruta={`/eventos?q=${encodeURIComponent(evento.nombre)}`}
+                  />
 
                   <div className="flex gap-3 mt-3">
                     {evento.instagram && <a href={`https://instagram.com/${evento.instagram}`} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-blue-400 text-xs underline">Instagram</a>}

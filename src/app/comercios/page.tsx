@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import CompartirBoton from "@/components/CompartirBoton";
 
 function normalizar(texto: string) {
   return texto
@@ -179,11 +180,19 @@ export default async function Comercios({
                               {producto.descripcion}
                             </p>
                           </div>
-                          {producto.precio && (
-                            <p className="text-blue-400 font-bold text-sm whitespace-nowrap ml-4">
-                              ${Number(producto.precio).toLocaleString("es-AR")}
-                            </p>
-                          )}
+                          <div className="flex flex-col items-end gap-2 ml-4">
+                            {producto.precio && (
+                              <p className="text-blue-400 font-bold text-sm whitespace-nowrap">
+                                ${Number(producto.precio).toLocaleString("es-AR")}
+                              </p>
+                            )}
+                            <CompartirBoton
+                              chico
+                              titulo={producto.nombre}
+                              texto={`Mirá ${producto.nombre} en ${comercio.nombre}${producto.precio ? " a $" + Number(producto.precio).toLocaleString("es-AR") : ""}, en MotorHub`}
+                              ruta={`/comercios?q=${encodeURIComponent(producto.nombre)}`}
+                            />
+                          </div>
                         </div>
                       ))}
                     </div>

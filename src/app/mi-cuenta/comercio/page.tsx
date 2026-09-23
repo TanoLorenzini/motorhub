@@ -5,6 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { subirFoto } from "@/lib/imagenes";
+import EstadoSuscripcion from "@/components/EstadoSuscripcion";
+
+const LIMITE_GRATIS = 3;
 
 const RUBROS = [
   "Venta de autos y motos",
@@ -63,6 +66,7 @@ export default function MiComercio() {
   const [userId, setUserId] = useState<string | null>(null);
   const [perfilId, setPerfilId] = useState<number | null>(null);
   const [esComerciante, setEsComerciante] = useState(false);
+  const [vence, setVence] = useState<string | null>(null);
 
   const [comercio, setComercio] = useState<Comercio>(comercioVacio);
   const [fotoNueva, setFotoNueva] = useState<File | null>(null);
@@ -99,11 +103,20 @@ export default function MiComercio() {
       setPerfilId(perfil.id);
       setEsComerciante(perfil.es_comerciante);
 
-      const { data: c } = await supabase
-        .from("comercios")
-        .select("*, productos(*)")
-        .eq("perfil_id", perfil.id)
-        .maybeSingle();
+      const [{ data: c }, { data: suscripcion }] = await Promise.all([
+        supabase
+          .from("comercios")
+          .select("*, productos(*)")
+          .eq("perfil_id", perfil.id)
+          .maybeSingle(),
+        supabase
+          .from("suscripciones")
+          .select("comercio_vence")
+          .eq("perfil_id", perfil.id)
+          .maybeSingle(),
+      ]);
+
+      setVence(suscripcion?.comercio_vence ?? null);
 
       if (c) {
         setComercio({
@@ -132,6 +145,14 @@ export default function MiComercio() {
     () => (fotoNueva ? URL.createObjectURL(fotoNueva) : comercio.fotos[0] ?? null),
     [fotoNueva, comercio.fotos]
   );
+
+  const premiumActivo = vence !== null && new Date(vence) > new Date();
+  const llegoAlLimite = !premiumActivo && productos.length >= LIMITE_GRATIS;
+
+  const idsVisibles = useMemo(() => {
+    const primeros = [...productos].sort((a, b) => a.id - b.id).slice(0, LIMITE_GRATIS);
+    return new Set(primeros.map((p) => p.id));
+  }, [productos]);
 
   function cambiar(campo: keyof Comercio, valor: string) {
     setComercio((c) => ({ ...c, [campo]: valor }));
@@ -225,7 +246,14 @@ export default function MiComercio() {
         .select()
         .single();
 
-      if (error) throw new Error(error.message);
+      if (error) {
+        if (error.message.includes("row-level security")) {
+          throw new Error(
+            `Llegaste al límite de ${LIMITE_GRATIS} productos del plan gratuito. Con Premium cargás sin límite.`
+          );
+        }
+        throw new Error(error.message);
+      }
 
       setProductos((lista) => [data, ...lista]);
       setNuevoProducto({ nombre: "", descripcion: "", precio: "" });
@@ -274,6 +302,13 @@ export default function MiComercio() {
             Mi <span className="text-blue-400">comercio</span>
           </h1>
         </div>
+
+        <EstadoSuscripcion
+          tipo="comercio"
+          vence={vence}
+          cantidad={productos.length}
+          limite={LIMITE_GRATIS}
+        />
 
         <form
           onSubmit={guardarComercio}
@@ -406,8 +441,6 @@ export default function MiComercio() {
             </label>
           </div>
 
-          {error && <p className="text-red-400 text-sm">{error}</p>}
-
           <div className="flex flex-wrap items-center gap-4">
             <button
               type="submit"
@@ -433,83 +466,102 @@ export default function MiComercio() {
             Productos ({productos.length})
           </h2>
 
+          {error && <p className="text-red-400 text-sm">{error}</p>}
+
           {!comercio.id ? (
             <p className="text-sm text-gray-500">
               Primero guardá los datos de tu comercio, y después vas a poder cargar productos.
             </p>
           ) : (
             <>
-              <form onSubmit={agregarProducto} className="space-y-3 border border-gray-800 rounded p-4">
-                <p className="text-sm font-semibold text-gray-300">Agregar producto</p>
-                <input
-                  type="text"
-                  required
-                  placeholder="Nombre del producto"
-                  value={nuevoProducto.nombre}
-                  onChange={(e) => setNuevoProducto({ ...nuevoProducto, nombre: e.target.value })}
-                  className={claseInput}
-                />
-                <textarea
-                  rows={2}
-                  placeholder="Descripción: marca, compatibilidad, estado..."
-                  value={nuevoProducto.descripcion}
-                  onChange={(e) => setNuevoProducto({ ...nuevoProducto, descripcion: e.target.value })}
-                  className={claseInput}
-                />
-                <div className="grid gap-3 md:grid-cols-2">
+              {llegoAlLimite ? (
+                <p className="text-sm text-yellow-300 bg-yellow-500/10 border border-yellow-600 rounded p-3">
+                  Llegaste al límite de {LIMITE_GRATIS} productos del plan gratuito. Con Premium podés
+                  cargar todos los que quieras.
+                </p>
+              ) : (
+                <form onSubmit={agregarProducto} className="space-y-3 border border-gray-800 rounded p-4">
+                  <p className="text-sm font-semibold text-gray-300">Agregar producto</p>
                   <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    placeholder="Precio en pesos (opcional)"
-                    value={nuevoProducto.precio}
-                    onChange={(e) => setNuevoProducto({ ...nuevoProducto, precio: e.target.value })}
+                    type="text"
+                    required
+                    placeholder="Nombre del producto"
+                    value={nuevoProducto.nombre}
+                    onChange={(e) => setNuevoProducto({ ...nuevoProducto, nombre: e.target.value })}
                     className={claseInput}
                   />
-                  <input
-                    key={claveArchivo}
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => setFotoProducto(e.target.files?.[0] ?? null)}
-                    className="text-sm text-gray-400 file:mr-3 file:bg-gray-800 file:text-gray-200 file:border-0 file:px-3 file:py-2 file:rounded"
+                  <textarea
+                    rows={2}
+                    placeholder="Descripción: marca, compatibilidad, estado..."
+                    value={nuevoProducto.descripcion}
+                    onChange={(e) => setNuevoProducto({ ...nuevoProducto, descripcion: e.target.value })}
+                    className={claseInput}
                   />
-                </div>
-                <button
-                  type="submit"
-                  disabled={agregando}
-                  className="bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white text-xs font-bold uppercase px-4 py-2 rounded transition"
-                >
-                  {agregando ? "Agregando..." : "+ Agregar producto"}
-                </button>
-              </form>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="Precio en pesos (opcional)"
+                      value={nuevoProducto.precio}
+                      onChange={(e) => setNuevoProducto({ ...nuevoProducto, precio: e.target.value })}
+                      className={claseInput}
+                    />
+                    <input
+                      key={claveArchivo}
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setFotoProducto(e.target.files?.[0] ?? null)}
+                      className="text-sm text-gray-400 file:mr-3 file:bg-gray-800 file:text-gray-200 file:border-0 file:px-3 file:py-2 file:rounded"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={agregando}
+                    className="bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white text-xs font-bold uppercase px-4 py-2 rounded transition"
+                  >
+                    {agregando ? "Agregando..." : "+ Agregar producto"}
+                  </button>
+                </form>
+              )}
 
               {productos.length === 0 && (
                 <p className="text-sm text-gray-500">Todavía no cargaste productos.</p>
               )}
 
               <ul className="divide-y divide-gray-800">
-                {productos.map((p) => (
-                  <li key={p.id} className="flex items-center gap-3 py-3">
-                    {p.foto_url && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={p.foto_url} alt={p.nombre} className="w-14 h-14 object-cover rounded" />
-                    )}
-                    <div className="flex-1">
-                      <p className="font-semibold text-sm">{p.nombre}</p>
-                      {p.precio !== null && (
-                        <p className="text-blue-400 text-sm">
-                          ${Number(p.precio).toLocaleString("es-AR")}
-                        </p>
+                {productos.map((p) => {
+                  const oculto = !premiumActivo && !idsVisibles.has(p.id);
+                  return (
+                    <li key={p.id} className={`flex items-center gap-3 py-3 ${oculto ? "opacity-50" : ""}`}>
+                      {p.foto_url && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={p.foto_url} alt={p.nombre} className="w-14 h-14 object-cover rounded" />
                       )}
-                    </div>
-                    <button
-                      onClick={() => borrarProducto(p.id)}
-                      className="text-red-400 hover:text-red-300 text-xs font-bold uppercase"
-                    >
-                      Borrar
-                    </button>
-                  </li>
-                ))}
+                      <div className="flex-1">
+                        <p className="font-semibold text-sm">
+                          {p.nombre}
+                          {oculto && (
+                            <span className="ml-2 bg-gray-700 text-gray-300 text-[10px] font-bold uppercase px-2 py-0.5 rounded">
+                              Oculto
+                            </span>
+                          )}
+                        </p>
+                        {p.precio !== null && (
+                          <p className="text-blue-400 text-sm">
+                            ${Number(p.precio).toLocaleString("es-AR")}
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => borrarProducto(p.id)}
+                        className="text-red-400 hover:text-red-300 text-xs font-bold uppercase"
+                      >
+                        Borrar
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             </>
           )}

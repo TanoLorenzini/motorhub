@@ -18,15 +18,36 @@ export default async function Eventos({
   const { q = "", pasados = "" } = await searchParams;
   const incluirPasados = pasados === "1";
 
-  const { data, error } = await supabase
-    .from("eventos")
-    .select("*")
-    .order("fecha", { ascending: true });
+  const [{ data, error }, { data: suscripciones }] = await Promise.all([
+    supabase.from("eventos").select("*").order("fecha", { ascending: true }),
+    supabase.from("suscripciones").select("perfil_id, eventos_vence"),
+  ]);
+
+  const ahora = new Date();
+  const perfilesPremium = new Set(
+    (suscripciones ?? [])
+      .filter((s) => s.eventos_vence && new Date(s.eventos_vence) > ahora)
+      .map((s) => s.perfil_id)
+  );
+
+  const primerEventoDe: Record<number, number> = {};
+  for (const e of data ?? []) {
+    if (!e.perfil_id) continue;
+    const actual = primerEventoDe[e.perfil_id];
+    if (actual === undefined || e.id < actual) primerEventoDe[e.perfil_id] = e.id;
+  }
+
+  const visibles = (data ?? []).filter(
+    (e) =>
+      !e.perfil_id ||
+      perfilesPremium.has(e.perfil_id) ||
+      primerEventoDe[e.perfil_id] === e.id
+  );
 
   const hoy = new Date().toISOString().slice(0, 10);
   const busqueda = normalizar(q.trim());
 
-  const eventos = (data ?? []).filter((e) => {
+  const eventos = visibles.filter((e) => {
     const esFuturo = e.fecha >= hoy;
     if (!incluirPasados && !esFuturo) return false;
     if (!busqueda) return true;

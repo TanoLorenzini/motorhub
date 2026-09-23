@@ -3,6 +3,8 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import CompartirBoton from "@/components/CompartirBoton";
 
+const LIMITE_GRATIS = 3;
+
 function normalizar(texto: string) {
   return texto
     .toLowerCase()
@@ -17,12 +19,26 @@ export default async function Comercios({
 }) {
   const { q = "", rubro = "" } = await searchParams;
 
-  const { data, error } = await supabase
-    .from("comercios")
-    .select("*, productos(*)")
-    .order("created_at", { ascending: false });
+  const [{ data, error }, { data: suscripciones }] = await Promise.all([
+    supabase
+      .from("comercios")
+      .select("*, productos(*)")
+      .order("created_at", { ascending: false }),
+    supabase.from("suscripciones").select("perfil_id, comercio_vence"),
+  ]);
 
-  const todos = data ?? [];
+  const ahora = new Date();
+  const perfilesPremium = new Set(
+    (suscripciones ?? [])
+      .filter((s) => s.comercio_vence && new Date(s.comercio_vence) > ahora)
+      .map((s) => s.perfil_id)
+  );
+
+  const todos = (data ?? []).map((c) => {
+    const ordenados = [...(c.productos ?? [])].sort((a: any, b: any) => a.id - b.id);
+    const sinLimite = !c.perfil_id || perfilesPremium.has(c.perfil_id);
+    return { ...c, productos: sinLimite ? ordenados : ordenados.slice(0, LIMITE_GRATIS) };
+  });
 
   const rubrosDisponibles: string[] = Array.from(
     new Set(todos.flatMap((c) => c.rubros ?? []))
@@ -34,7 +50,7 @@ export default async function Comercios({
     const coincideRubro = !rubro || (c.rubros ?? []).includes(rubro);
     if (!busqueda) return coincideRubro;
 
-    const textoProductos = (c.productos ?? [])
+    const textoProductos = c.productos
       .map((p: any) => (p.nombre ?? "") + " " + (p.descripcion ?? ""))
       .join(" ");
 
@@ -161,7 +177,7 @@ export default async function Comercios({
                   {comercio.facebook && <a href={`https://facebook.com/${comercio.facebook}`} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-blue-400 text-xs underline">Facebook</a>}
                 </div>
 
-                {comercio.productos && comercio.productos.length > 0 && (
+                {comercio.productos.length > 0 && (
                   <div className="border-t border-gray-800 pt-4 mt-4">
                     <h4 className="text-sm font-bold uppercase text-gray-500 mb-3">
                       Productos
@@ -173,6 +189,10 @@ export default async function Comercios({
                           className="flex justify-between items-start bg-black/40 rounded p-3"
                         >
                           <div>
+                            {producto.foto_url && (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={producto.foto_url} alt={producto.nombre} className="w-20 h-20 object-cover rounded mb-2" />
+                            )}
                             <p className="font-semibold text-white text-sm">
                               {producto.nombre}
                             </p>

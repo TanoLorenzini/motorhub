@@ -1,11 +1,50 @@
 import Image from "next/image";
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
-export default async function Comercios() {
-  const { data: comercios, error } = await supabase
+function normalizar(texto: string) {
+  return texto
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+export default async function Comercios({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; rubro?: string }>;
+}) {
+  const { q = "", rubro = "" } = await searchParams;
+
+  const { data, error } = await supabase
     .from("comercios")
     .select("*, productos(*)")
     .order("created_at", { ascending: false });
+
+  const todos = data ?? [];
+
+  const rubrosDisponibles: string[] = Array.from(
+    new Set(todos.flatMap((c) => c.rubros ?? []))
+  );
+
+  const busqueda = normalizar(q.trim());
+
+  const comercios = todos.filter((c) => {
+    const coincideRubro = !rubro || (c.rubros ?? []).includes(rubro);
+    if (!busqueda) return coincideRubro;
+
+    const textoProductos = (c.productos ?? [])
+      .map((p: any) => (p.nombre ?? "") + " " + (p.descripcion ?? ""))
+      .join(" ");
+
+    const texto = normalizar(
+      [c.nombre, c.descripcion, c.direccion, ...(c.rubros ?? []), textoProductos].join(" ")
+    );
+
+    return coincideRubro && texto.includes(busqueda);
+  });
+
+  const hayFiltros = q !== "" || rubro !== "";
 
   return (
     <div className="bg-black text-white min-h-screen">
@@ -13,9 +52,46 @@ export default async function Comercios() {
         <h1 className="text-3xl md:text-4xl font-extrabold uppercase mb-2">
           Comercios <span className="text-blue-400">MotorHub</span>
         </h1>
-        <p className="text-gray-400 mb-10">
-          Talleres y casas de repuestos de confianza.
+        <p className="text-gray-400 mb-8">
+          Talleres, repuestos y servicios de confianza.
         </p>
+
+        <form method="get" className="flex flex-col md:flex-row gap-3 mb-4">
+          <input
+            type="text"
+            name="q"
+            defaultValue={q}
+            placeholder="Buscar comercio, producto o servicio..."
+            className="flex-1 bg-gray-900 border border-gray-700 rounded px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+          />
+          <select
+            name="rubro"
+            defaultValue={rubro}
+            className="bg-gray-900 border border-gray-700 rounded px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+          >
+            <option value="">Todos los rubros</option>
+            {rubrosDisponibles.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </select>
+          <button
+            type="submit"
+            className="bg-blue-600 hover:bg-blue-500 text-white font-bold uppercase text-sm px-6 py-2 rounded transition"
+          >
+            Buscar
+          </button>
+        </form>
+
+        {hayFiltros && (
+          <p className="text-sm text-gray-400 mb-8">
+            {comercios.length} resultado(s).{" "}
+            <Link href="/comercios" className="text-blue-400 underline">
+              Limpiar busqueda
+            </Link>
+          </p>
+        )}
 
         {error && (
           <p className="text-red-400">
@@ -23,12 +99,16 @@ export default async function Comercios() {
           </p>
         )}
 
-        {!error && comercios?.length === 0 && (
-          <p className="text-gray-500">Todavia no hay comercios cargados.</p>
+        {!error && comercios.length === 0 && (
+          <p className="text-gray-500">
+            {hayFiltros
+              ? "No encontramos comercios con esa busqueda."
+              : "Todavia no hay comercios cargados."}
+          </p>
         )}
 
         <div className="grid gap-8 md:grid-cols-2">
-          {comercios?.map((comercio) => (
+          {comercios.map((comercio) => (
             <div
               key={comercio.id}
               className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden hover:border-blue-500 transition"
@@ -46,12 +126,12 @@ export default async function Comercios() {
 
               <div className="p-6">
                 <div className="flex flex-wrap gap-2 mb-3">
-                  {comercio.rubros?.map((rubro: string) => (
+                  {comercio.rubros?.map((r: string) => (
                     <span
-                      key={rubro}
+                      key={r}
                       className="bg-blue-600/20 border border-blue-500 text-blue-300 text-xs font-semibold uppercase px-2 py-1 rounded"
                     >
-                      {rubro}
+                      {r}
                     </span>
                   ))}
                 </div>
@@ -74,7 +154,8 @@ export default async function Comercios() {
                 </div>
 
                 {comercio.whatsapp && <WhatsappButton numero={comercio.whatsapp} />}
-                  <div className="flex gap-3 mt-3">
+
+                <div className="flex gap-3 mt-3">
                   {comercio.instagram && <a href={`https://instagram.com/${comercio.instagram}`} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-blue-400 text-xs underline">Instagram</a>}
                   {comercio.facebook && <a href={`https://facebook.com/${comercio.facebook}`} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-blue-400 text-xs underline">Facebook</a>}
                 </div>
@@ -131,7 +212,7 @@ function MapLink({ direccion }: { direccion: string }) {
 function WhatsappButton({ numero }: { numero: string }) {
   const url = "https://wa.me/" + numero;
   return (
-    <a href={url} target="_blank" rel="noopener noreferrer" className="inline-block bg-green-600 hover:bg-green-500 text-white text-xs font-bold uppercase px-4 py-2 rounded transition mb-4">
+    <a href={url} target="_blank" rel="noopener noreferrer" className="inline-block bg-green-600 hover:bg-green-500 text-white text-xs font-bold uppercase px-4 py-2 rounded transition">
       Contactar por WhatsApp
     </a>
   );

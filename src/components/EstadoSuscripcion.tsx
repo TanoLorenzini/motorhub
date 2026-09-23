@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
+import { PLANES } from "@/lib/planes";
 
 type Props = {
   tipo: "comercio" | "eventos";
@@ -41,6 +43,59 @@ function formatearHora(fecha: Date) {
   );
 }
 
+function BotonPagar({ tipo, activo }: { tipo: "comercio" | "eventos"; activo: boolean }) {
+  const [cargando, setCargando] = useState(false);
+  const [error, setError] = useState("");
+
+  async function pagar() {
+    setCargando(true);
+    setError("");
+
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) throw new Error("Tenés que iniciar sesión.");
+
+      const respuesta = await fetch("/api/suscripcion", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ tipo }),
+      });
+
+      const resultado = await respuesta.json();
+      if (!respuesta.ok || !resultado.url) {
+        throw new Error(resultado.error ?? "No se pudo iniciar el pago.");
+      }
+
+      window.location.href = resultado.url;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo iniciar el pago.");
+      setCargando(false);
+    }
+  }
+
+  const precio = PLANES[tipo].precio.toLocaleString("es-AR");
+
+  return (
+    <div className="space-y-2">
+      <button
+        type="button"
+        onClick={pagar}
+        disabled={cargando}
+        className="bg-yellow-500 hover:bg-yellow-400 disabled:opacity-60 text-black text-xs font-bold uppercase px-4 py-2 rounded transition"
+      >
+        {cargando
+          ? "Redirigiendo a Mercado Pago..."
+          : `${activo ? "Renovar 30 días" : "Suscribirme a Premium"} · $${precio}`}
+      </button>
+      {error && <p className="text-red-400 text-sm">{error}</p>}
+    </div>
+  );
+}
+
 export default function EstadoSuscripcion({
   tipo,
   vence,
@@ -74,16 +129,7 @@ export default function EstadoSuscripcion({
   const activo = restante > 0;
   const ocultos = Math.max(0, cantidad - limite);
 
-  const botonRenovar = (
-    <button
-      type="button"
-      disabled
-      className="bg-yellow-500 text-black text-xs font-bold uppercase px-4 py-2 rounded opacity-60 cursor-not-allowed"
-      title="Próximamente con Mercado Pago"
-    >
-      {activo ? "Renovar 30 días" : "Suscribirme a Premium"} (próximamente)
-    </button>
-  );
+  const botonRenovar = <BotonPagar tipo={tipo} activo={activo} />;
 
   if (!fechaVence) {
     const porcentajeUso = Math.min(100, (usadosPlan / limite) * 100);

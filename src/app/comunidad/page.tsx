@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 
 export default async function Comunidad() {
@@ -30,26 +31,43 @@ export default async function Comunidad() {
           {autos?.map((auto) => (
             <div
               key={auto.id}
-              className="bg-gray-900 border border-gray-800 rounded-lg p-6 hover:border-blue-500 transition"
+              className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden hover:border-blue-500 border transition"
             >
-              <h3 className="text-lg font-bold text-blue-400 mb-1">
-                {auto.titulo}
-              </h3>
-              <p className="text-sm text-gray-500 mb-3">
-                {auto.dueño} · {auto.ubicacion}
-              </p>
-              <p className="text-gray-300 text-sm">{auto.descripcion}</p>
+              <div className="relative w-full h-48 bg-gray-800">
+                {auto.foto_url ? (
+                  <Image
+                    src={auto.foto_url}
+                    alt={auto.titulo}
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-gray-600 text-sm">
+                    Sin foto
+                  </div>
+                )}
+              </div>
 
-              {auto.whatsapp && (
-                <a
-                  href={`https://wa.me/${auto.whatsapp}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-4 inline-block bg-green-600 hover:bg-green-500 text-white text-xs font-bold uppercase px-4 py-2 rounded transition"
-                >
-                  Contactar por WhatsApp
-                </a>
-              )}
+              <div className="p-6">
+                <h3 className="text-lg font-bold text-blue-400 mb-1">
+                  {auto.titulo}
+                </h3>
+                <p className="text-sm text-gray-500 mb-3">
+                  {auto.dueño} · {auto.ubicacion}
+                </p>
+                <p className="text-gray-300 text-sm">{auto.descripcion}</p>
+
+                {auto.whatsapp && (
+                  <a
+                    href={`https://wa.me/${auto.whatsapp}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-4 inline-block bg-green-600 hover:bg-green-500 text-white text-xs font-bold uppercase px-4 py-2 rounded transition"
+                  >
+                    Contactar por WhatsApp
+                  </a>
+                )}
+              </div>
             </div>
           ))}
         </div>

@@ -1,28 +1,11 @@
-const autosEjemplo = [
-  {
-    id: 1,
-    titulo: "Ford Falcon 1978",
-    dueño: "Carlos M.",
-    ubicacion: "Resistencia, Chaco",
-    descripcion: "Restaurado a nuevo, motor original 221.",
-  },
-  {
-    id: 2,
-    titulo: "Fiat 600 1965",
-    dueño: "Marina G.",
-    ubicacion: "Corrientes",
-    descripcion: "Joya familiar, 3 generaciones en la misma familia.",
-  },
-  {
-    id: 3,
-    titulo: "Yamaha RD 350 1982",
-    dueño: "Tano L.",
-    ubicacion: "Resistencia, Chaco",
-    descripcion: "Puesta a punto completa, cero km del alma.",
-  },
-];
+import { supabase } from "@/lib/supabase";
 
-export default function Comunidad() {
+export default async function Comunidad() {
+  const { data: autos, error } = await supabase
+    .from("autos")
+    .select("*")
+    .order("created_at", { ascending: false });
+
   return (
     <div className="bg-black text-white min-h-screen">
       <section className="max-w-6xl mx-auto px-4 py-16">
@@ -33,8 +16,18 @@ export default function Comunidad() {
           Fierros publicados por la comunidad.
         </p>
 
+        {error && (
+          <p className="text-red-400">
+            Hubo un problema cargando los autos: {error.message}
+          </p>
+        )}
+
+        {!error && autos?.length === 0 && (
+          <p className="text-gray-500">Todavía no hay autos publicados.</p>
+        )}
+
         <div className="grid gap-6 md:grid-cols-3">
-          {autosEjemplo.map((auto) => (
+          {autos?.map((auto) => (
             <div
               key={auto.id}
               className="bg-gray-900 border border-gray-800 rounded-lg p-6 hover:border-blue-500 transition"
@@ -46,6 +39,17 @@ export default function Comunidad() {
                 {auto.dueño} · {auto.ubicacion}
               </p>
               <p className="text-gray-300 text-sm">{auto.descripcion}</p>
+
+              {auto.whatsapp && (
+                <a
+                  href={`https://wa.me/${auto.whatsapp}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-4 inline-block bg-green-600 hover:bg-green-500 text-white text-xs font-bold uppercase px-4 py-2 rounded transition"
+                >
+                  Contactar por WhatsApp
+                </a>
+              )}
             </div>
           ))}
         </div>

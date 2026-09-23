@@ -1,11 +1,37 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import type { User } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabase";
 
 export default function Navbar() {
+  const router = useRouter();
   const [menuAbierto, setMenuAbierto] = useState(false);
+  const [usuario, setUsuario] = useState<User | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setUsuario(data.session?.user ?? null);
+    });
+
+    const { data } = supabase.auth.onAuthStateChange((_evento, session) => {
+      setUsuario(session?.user ?? null);
+    });
+
+    return () => data.subscription.unsubscribe();
+  }, []);
+
+  async function cerrarSesion() {
+    await supabase.auth.signOut();
+    setMenuAbierto(false);
+    router.push("/");
+    router.refresh();
+  }
+
+  const nombre = usuario?.user_metadata?.nombre ?? usuario?.email;
 
   const links = [
     { href: "/", label: "Inicio" },
@@ -37,12 +63,28 @@ export default function Navbar() {
           ))}
         </ul>
 
-        <Link
-          href="/login"
-          className="hidden md:inline-block bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold uppercase px-4 py-2 rounded transition"
-        >
-          Iniciar sesion
-        </Link>
+        <div className="hidden md:flex items-center gap-3">
+          {usuario ? (
+            <>
+              <span className="text-gray-300 text-sm">
+                Hola, <span className="text-white font-semibold">{nombre}</span>
+              </span>
+              <button
+                onClick={cerrarSesion}
+                className="border border-gray-600 hover:border-blue-500 text-gray-200 text-sm font-bold uppercase px-4 py-2 rounded transition"
+              >
+                Salir
+              </button>
+            </>
+          ) : (
+            <Link
+              href="/login"
+              className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold uppercase px-4 py-2 rounded transition"
+            >
+              Iniciar sesión
+            </Link>
+          )}
+        </div>
 
         <button
           onClick={() => setMenuAbierto(!menuAbierto)}
@@ -79,13 +121,27 @@ export default function Navbar() {
               </li>
             ))}
             <li>
-              <Link
-                href="/login"
-                onClick={() => setMenuAbierto(false)}
-                className="block bg-blue-600 hover:bg-blue-500 text-white text-center font-bold uppercase px-4 py-2 rounded transition"
-              >
-                Iniciar sesion
-              </Link>
+              {usuario ? (
+                <div className="flex items-center justify-between">
+                  <span className="normal-case text-gray-300">
+                    Hola, <span className="text-white">{nombre}</span>
+                  </span>
+                  <button
+                    onClick={cerrarSesion}
+                    className="border border-gray-600 text-gray-200 font-bold uppercase px-4 py-2 rounded"
+                  >
+                    Salir
+                  </button>
+                </div>
+              ) : (
+                <Link
+                  href="/login"
+                  onClick={() => setMenuAbierto(false)}
+                  className="block bg-blue-600 hover:bg-blue-500 text-white text-center font-bold uppercase px-4 py-2 rounded transition"
+                >
+                  Iniciar sesión
+                </Link>
+              )}
             </li>
           </ul>
         </div>

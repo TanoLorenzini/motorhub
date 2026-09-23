@@ -12,6 +12,8 @@ type Perfil = {
   whatsapp: string | null;
   instagram: string | null;
   facebook: string | null;
+  es_comerciante: boolean;
+  es_organizador: boolean;
 };
 
 type Auto = {
@@ -42,7 +44,7 @@ export default function MiCuenta() {
 
       const { data } = await supabase
         .from("perfiles")
-        .select("id, nombre, ubicacion, whatsapp, instagram, facebook, autos(id, titulo, en_venta, participa_exposiciones)")
+        .select("id, nombre, ubicacion, whatsapp, instagram, facebook, es_comerciante, es_organizador, autos(id, titulo, en_venta, participa_exposiciones)")
         .eq("user_id", sesion.session.user.id)
         .single();
 
@@ -85,6 +87,21 @@ export default function MiCuenta() {
 
     setGuardando(false);
     setMensaje(error ? "No se pudieron guardar los cambios: " + error.message : "Datos guardados.");
+  }
+
+  async function activarRol(campo: "es_comerciante" | "es_organizador") {
+    if (!perfil) return;
+
+    const { error } = await supabase
+      .from("perfiles")
+      .update({ [campo]: true })
+      .eq("id", perfil.id);
+
+    if (error) {
+      alert("No se pudo activar: " + error.message);
+      return;
+    }
+    setPerfil({ ...perfil, [campo]: true });
   }
 
   async function borrarAuto(id: number) {
@@ -189,6 +206,55 @@ export default function MiCuenta() {
             {mensaje && <p className="text-sm text-green-400">{mensaje}</p>}
           </div>
         </form>
+
+        <div>
+          <h2 className="text-lg font-bold uppercase text-gray-300 mb-4">Tipo de cuenta</h2>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="bg-gray-900 border border-gray-800 rounded-lg p-6 flex flex-col">
+              <h3 className="font-bold text-blue-400 uppercase mb-2">Comerciante</h3>
+              <p className="text-sm text-gray-400 mb-4 flex-1">
+                Para talleres, casas de repuestos, lubricentros, lavaderos y todo comercio del rubro. Cargá tu comercio y tus productos.
+              </p>
+              {perfil.es_comerciante ? (
+                <Link
+                  href="/mi-cuenta/comercio"
+                  className="text-center bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold uppercase px-4 py-2 rounded transition"
+                >
+                  Administrar mi comercio
+                </Link>
+              ) : (
+                <button
+                  onClick={() => activarRol("es_comerciante")}
+                  className="border border-blue-500 hover:bg-blue-500/10 text-white text-xs font-bold uppercase px-4 py-2 rounded transition"
+                >
+                  Activar perfil de comerciante
+                </button>
+              )}
+            </div>
+
+            <div className="bg-gray-900 border border-gray-800 rounded-lg p-6 flex flex-col">
+              <h3 className="font-bold text-blue-400 uppercase mb-2">Organizador de eventos</h3>
+              <p className="text-sm text-gray-400 mb-4 flex-1">
+                Para clubes y organizadores de encuentros, exposiciones y juntadas. Publicá tus eventos.
+              </p>
+              {perfil.es_organizador ? (
+                <Link
+                  href="/mi-cuenta/eventos"
+                  className="text-center bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold uppercase px-4 py-2 rounded transition"
+                >
+                  Administrar mis eventos
+                </Link>
+              ) : (
+                <button
+                  onClick={() => activarRol("es_organizador")}
+                  className="border border-blue-500 hover:bg-blue-500/10 text-white text-xs font-bold uppercase px-4 py-2 rounded transition"
+                >
+                  Activar perfil de organizador
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
 
         <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
           <div className="flex items-center justify-between mb-4">

@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import CompartirBoton from "@/components/CompartirBoton";
+import { eventoVisibleSinPremium } from "@/lib/eventos";
 
 function normalizar(texto: string) {
   return texto
@@ -30,21 +31,24 @@ export default async function Eventos({
       .map((s) => s.perfil_id)
   );
 
-  const primerEventoDe: Record<number, number> = {};
+  const hoy = new Date().toISOString().slice(0, 10);
+
+  const eventosPorPerfil: Record<number, any[]> = {};
   for (const e of data ?? []) {
     if (!e.perfil_id) continue;
-    const actual = primerEventoDe[e.perfil_id];
-    if (actual === undefined || e.id < actual) primerEventoDe[e.perfil_id] = e.id;
+    (eventosPorPerfil[e.perfil_id] ??= []).push(e);
   }
+
+  const idsVisiblesSinPremium = new Set(
+    Object.values(eventosPorPerfil).map((lista) => eventoVisibleSinPremium(lista, hoy)?.id)
+  );
 
   const visibles = (data ?? []).filter(
     (e) =>
       !e.perfil_id ||
       perfilesPremium.has(e.perfil_id) ||
-      primerEventoDe[e.perfil_id] === e.id
+      idsVisiblesSinPremium.has(e.id)
   );
-
-  const hoy = new Date().toISOString().slice(0, 10);
   const busqueda = normalizar(q.trim());
 
   const eventos = visibles.filter((e) => {

@@ -7,6 +7,9 @@ type Props = {
   vence: string | null;
   cantidad: number;
   limite: number;
+  usados?: number;
+  textoVisibles?: string;
+  textoLimite?: string;
 };
 
 const ZONA = "America/Argentina/Buenos_Aires";
@@ -38,7 +41,15 @@ function formatearHora(fecha: Date) {
   );
 }
 
-export default function EstadoSuscripcion({ tipo, vence, cantidad, limite }: Props) {
+export default function EstadoSuscripcion({
+  tipo,
+  vence,
+  cantidad,
+  limite,
+  usados,
+  textoVisibles,
+  textoLimite,
+}: Props) {
   const [ahora, setAhora] = useState<number | null>(null);
 
   useEffect(() => {
@@ -51,6 +62,13 @@ export default function EstadoSuscripcion({ tipo, vence, cantidad, limite }: Pro
 
   const singular = tipo === "comercio" ? "producto" : "evento";
   const pluralItems = tipo === "comercio" ? "productos" : "eventos";
+  const usadosPlan = usados ?? cantidad;
+  const reglaVisibles =
+    textoVisibles ??
+    `Sin Premium, solo se muestran los primeros ${plural(limite, singular, pluralItems)} que cargaste.`;
+  const reglaLimite =
+    textoLimite ?? `En el plan gratuito podés cargar hasta ${plural(limite, singular, pluralItems)}.`;
+
   const fechaVence = vence ? new Date(vence) : null;
   const restante = fechaVence ? fechaVence.getTime() - ahora : 0;
   const activo = restante > 0;
@@ -68,7 +86,7 @@ export default function EstadoSuscripcion({ tipo, vence, cantidad, limite }: Pro
   );
 
   if (!fechaVence) {
-    const usado = Math.min(100, (cantidad / limite) * 100);
+    const porcentajeUso = Math.min(100, (usadosPlan / limite) * 100);
     return (
       <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 space-y-4">
         <div className="flex items-center justify-between">
@@ -79,14 +97,19 @@ export default function EstadoSuscripcion({ tipo, vence, cantidad, limite }: Pro
         </div>
         <div>
           <p className="text-sm text-gray-300 mb-2">
-            Usaste {cantidad} de {plural(limite, singular, pluralItems)}
+            Usaste {usadosPlan} de {limite}. {reglaLimite}
           </p>
           <div className="w-full h-2 bg-gray-800 rounded">
-            <div className="h-2 bg-blue-500 rounded" style={{ width: `${usado}%` }} />
+            <div className="h-2 bg-blue-500 rounded" style={{ width: `${porcentajeUso}%` }} />
           </div>
         </div>
+        {ocultos > 0 && (
+          <p className="text-sm text-gray-400">
+            Tenés {plural(ocultos, `${singular} oculto`, `${pluralItems} ocultos`)}. {reglaVisibles}
+          </p>
+        )}
         <p className="text-sm text-gray-400">
-          Con Premium cargás {pluralItems} sin límite durante 30 días.
+          Con Premium publicás {pluralItems} sin límite durante 30 días.
         </p>
         {botonRenovar}
       </div>
@@ -111,12 +134,11 @@ export default function EstadoSuscripcion({ tipo, vence, cantidad, limite }: Pro
         {ocultos > 0 ? (
           <p className="text-sm text-red-300">
             Hay {plural(ocultos, `${singular} oculto`, `${pluralItems} ocultos`)} que no se ven en el
-            sitio. Solo se muestran los primeros {plural(limite, singular, pluralItems)} que cargaste.
-            Renová y vuelven a aparecer todos.
+            sitio. {reglaVisibles} Renová y vuelven a aparecer todos.
           </p>
         ) : (
           <p className="text-sm text-gray-400">
-            Por ahora no tenés {pluralItems} ocultos, pero no podés cargar más de {limite}.
+            Por ahora no tenés {pluralItems} ocultos. {reglaLimite}
           </p>
         )}
         {botonRenovar}
@@ -129,7 +151,7 @@ export default function EstadoSuscripcion({ tipo, vence, cantidad, limite }: Pro
   const minutos = Math.floor((restante % (60 * 60 * 1000)) / (60 * 1000));
   const segundos = Math.floor((restante % (60 * 1000)) / 1000);
   const porcentaje = Math.min(100, (restante / DURACION_PLAN) * 100);
-  const venceProntoc = dias < 5;
+  const venceProonto = dias < 5;
 
   const bloques = [
     { valor: dias, etiqueta: dias === 1 ? "día" : "días" },
@@ -141,7 +163,7 @@ export default function EstadoSuscripcion({ tipo, vence, cantidad, limite }: Pro
   return (
     <div
       className={`bg-gray-900 border rounded-lg p-6 space-y-5 ${
-        venceProntoc ? "border-yellow-500" : "border-green-600"
+        venceProonto ? "border-yellow-500" : "border-green-600"
       }`}
     >
       <div className="flex items-center justify-between">
@@ -168,7 +190,7 @@ export default function EstadoSuscripcion({ tipo, vence, cantidad, limite }: Pro
       <div>
         <div className="w-full h-2 bg-gray-800 rounded">
           <div
-            className={`h-2 rounded ${venceProntoc ? "bg-yellow-500" : "bg-green-500"}`}
+            className={`h-2 rounded ${venceProonto ? "bg-yellow-500" : "bg-green-500"}`}
             style={{ width: `${porcentaje}%` }}
           />
         </div>
@@ -190,11 +212,11 @@ export default function EstadoSuscripcion({ tipo, vence, cantidad, limite }: Pro
         </p>
       </div>
 
-      {venceProntoc && (
+      {venceProonto && (
         <p className="text-sm text-yellow-300 bg-yellow-500/10 border border-yellow-600 rounded p-3">
           Tu suscripción vence pronto.
           {ocultos > 0
-            ? ` Si no renovás, se van a ocultar ${plural(ocultos, singular, pluralItems)} y solo quedarán visibles los primeros ${limite}.`
+            ? ` Si no renovás, se van a ocultar ${plural(ocultos, singular, pluralItems)}. ${reglaVisibles}`
             : " Si no renovás, vas a volver al plan gratuito."}
         </p>
       )}

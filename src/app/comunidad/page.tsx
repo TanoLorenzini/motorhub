@@ -94,6 +94,10 @@ export default async function Comunidad() {
                       Contactar por WhatsApp
                     </a>
                   )}
+                <div className="flex gap-3 mt-3">
+                {auto.instagram && <a href={`https://instagram.com/${auto.instagram}`} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-blue-400 text-xs underline">Instagram</a>}
+                {auto.facebook && <a href={`https://facebook.com/${auto.facebook}`} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-blue-400 text-xs underline">Facebook</a>}
+              </div>
                 </div>
               </div>
             );

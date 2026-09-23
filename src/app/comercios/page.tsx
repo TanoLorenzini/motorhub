@@ -74,6 +74,10 @@ export default async function Comercios() {
                 </div>
 
                 {comercio.whatsapp && <WhatsappButton numero={comercio.whatsapp} />}
+                  <div className="flex gap-3 mt-3">
+                  {comercio.instagram && <a href={`https://instagram.com/${comercio.instagram}`} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-blue-400 text-xs underline">Instagram</a>}
+                  {comercio.facebook && <a href={`https://facebook.com/${comercio.facebook}`} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-blue-400 text-xs underline">Facebook</a>}
+                </div>
 
                 {comercio.productos && comercio.productos.length > 0 && (
                   <div className="border-t border-gray-800 pt-4 mt-4">

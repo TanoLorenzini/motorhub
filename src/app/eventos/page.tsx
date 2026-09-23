@@ -93,6 +93,10 @@ export default async function Eventos() {
                   <a href={generarLinkIcs(evento)} download={evento.nombre + ".ics"} className="inline-block bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold uppercase px-4 py-2 rounded transition">
                     Agendar
                   </a>
+                    <div className="flex gap-3 mt-3">
+                    {evento.instagram && <a href={`https://instagram.com/${evento.instagram}`} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-blue-400 text-xs underline">Instagram</a>}
+                    {evento.facebook && <a href={`https://facebook.com/${evento.facebook}`} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-blue-400 text-xs underline">Facebook</a>}
+                  </div>
                 </div>
               </div>
             );

@@ -38,6 +38,7 @@ export default function Navbar() {
     { href: "/comunidad", label: "Comunidad" },
     { href: "/comercios", label: "Comercios" },
     { href: "/eventos", label: "Eventos" },
+    { href: "/foro", label: "Foro" },
   ];
 
   return (

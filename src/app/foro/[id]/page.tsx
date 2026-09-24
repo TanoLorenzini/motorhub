@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { haceCuanto } from "@/lib/foro";
 import FormularioRespuesta from "@/components/FormularioRespuesta";
+import MensajeForo from "@/components/MensajeForo";
 
 export default async function TemaForo({
   params,
@@ -33,8 +34,7 @@ export default async function TemaForo({
           <span className="inline-block bg-blue-600/20 border border-blue-500 text-blue-300 text-[10px] font-semibold uppercase px-2 py-0.5 rounded mb-3">
             {tema.categoria}
           </span>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-white mb-2">{tema.titulo}</h1>
-          <p className="text-sm text-gray-500 mb-6">
+          <p className="text-sm text-gray-500 mb-4">
             Por{" "}
             <Link
               href={`/comunidad/perfil/${tema.perfiles?.id}`}
@@ -44,7 +44,14 @@ export default async function TemaForo({
             </Link>{" "}
             · {haceCuanto(tema.created_at)}
           </p>
-          <p className="text-gray-200 whitespace-pre-line leading-relaxed">{tema.contenido}</p>
+          <MensajeForo
+            tabla="temas"
+            id={tema.id}
+            autorPerfilId={tema.perfil_id}
+            titulo={tema.titulo}
+            contenido={tema.contenido}
+            editado={tema.editado_at !== null}
+          />
         </article>
 
         <h2 className="text-lg font-bold uppercase text-gray-300 pt-4">
@@ -63,7 +70,13 @@ export default async function TemaForo({
                 </Link>{" "}
                 · {haceCuanto(r.created_at)}
               </p>
-              <p className="text-gray-200 whitespace-pre-line leading-relaxed">{r.contenido}</p>
+              <MensajeForo
+                tabla="respuestas"
+                id={r.id}
+                autorPerfilId={r.perfil_id}
+                contenido={r.contenido}
+                editado={r.editado_at !== null}
+              />
             </div>
           ))}
         </div>

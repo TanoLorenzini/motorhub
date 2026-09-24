@@ -291,12 +291,20 @@ export default function MiCuenta() {
                     )}
                   </div>
                 </div>
-                <button
-                  onClick={() => borrarAuto(auto.id)}
-                  className="text-red-400 hover:text-red-300 text-xs font-bold uppercase"
-                >
-                  Borrar
-                </button>
+                <div className="flex items-center gap-4">
+                  <Link
+                    href={`/mi-cuenta/vehiculo/${auto.id}`}
+                    className="text-blue-400 hover:text-blue-300 text-xs font-bold uppercase"
+                  >
+                    Editar
+                  </Link>
+                  <button
+                    onClick={() => borrarAuto(auto.id)}
+                    className="text-red-400 hover:text-red-300 text-xs font-bold uppercase"
+                  >
+                    Borrar
+                  </button>
+                </div>
               </li>
             ))}
           </ul>

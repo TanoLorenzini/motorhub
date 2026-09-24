@@ -553,12 +553,20 @@ export default function MiComercio() {
                           </p>
                         )}
                       </div>
-                      <button
-                        onClick={() => borrarProducto(p.id)}
-                        className="text-red-400 hover:text-red-300 text-xs font-bold uppercase"
-                      >
-                        Borrar
-                      </button>
+                        <div className="flex items-center gap-4">
+                        <Link
+                          href={`/mi-cuenta/producto/${p.id}`}
+                          className="text-blue-400 hover:text-blue-300 text-xs font-bold uppercase"
+                        >
+                          Editar
+                        </Link>
+                        <button
+                          onClick={() => borrarProducto(p.id)}
+                          className="text-red-400 hover:text-red-300 text-xs font-bold uppercase"
+                        >
+                          Borrar
+                        </button>
+                      </div>
                     </li>
                   );
                 })}

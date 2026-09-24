@@ -58,6 +58,11 @@ export default function Footer() {
                 Política de privacidad
               </Link>
             </li>
+            <li>
+              <Link href="/arrepentimiento" className="text-white font-semibold hover:text-blue-400 transition">
+                Botón de arrepentimiento
+              </Link>
+            </li>
           </ul>
         </div>
       </div>

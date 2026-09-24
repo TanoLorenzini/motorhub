@@ -126,9 +126,13 @@ export default function Terminos() {
             desde que la realizaste, sin costo ni necesidad de explicar el motivo, conforme al artículo
             34 de la Ley 24.240 de Defensa del Consumidor y al artículo 1110 del Código Civil y Comercial.
           </p>
-          <p>
-            Para ejercerlo, escribinos a {D.email} indicando el email de tu cuenta. Te reintegraremos el
-            importe por el mismo medio de pago y el plan quedará sin efecto.
+            <p>
+            Para ejercerlo, usá el{" "}
+            <Link href="/arrepentimiento" className="text-blue-400 underline">
+              Botón de arrepentimiento
+            </Link>{" "}
+            o escribinos a {D.email}. Te reintegraremos el importe por el mismo medio de pago y el plan
+            quedará sin efecto.
           </p>
         </Seccion>
 

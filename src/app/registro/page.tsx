@@ -91,7 +91,17 @@ export default function Registro() {
 
         {error && <p className="text-red-400 text-sm">{error}</p>}
         {aviso && <p className="text-green-400 text-sm">{aviso}</p>}
-
+                <p className="text-xs text-gray-500">
+          Al registrarte declarás ser mayor de 18 años y aceptás los{" "}
+          <Link href="/terminos" className="text-blue-400 underline">
+            Términos y condiciones
+          </Link>{" "}
+          y la{" "}
+          <Link href="/privacidad" className="text-blue-400 underline">
+            Política de privacidad
+          </Link>
+          .
+        </p>
         <button
           type="submit"
           disabled={cargando}

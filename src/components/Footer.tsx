@@ -1,6 +1,10 @@
 import Link from "next/link";
+import { DATOS_LEGALES } from "@/lib/datosLegales";
 
 export default function Footer() {
+  const mensaje = encodeURIComponent("Hola! Te escribo desde MotorHub.");
+  const linkWhatsapp = `https://wa.me/${DATOS_LEGALES.whatsapp}?text=${mensaje}`;
+
   return (
     <footer className="bg-gray-950 border-t-2 border-blue-500 text-gray-400 mt-auto">
       <div className="max-w-6xl mx-auto px-4 py-10 grid gap-8 md:grid-cols-3">
@@ -12,9 +16,7 @@ export default function Footer() {
         </div>
 
         <div>
-          <h4 className="text-white font-semibold uppercase text-sm mb-3">
-            Explorar
-          </h4>
+          <h4 className="text-white font-semibold uppercase text-sm mb-3">Explorar</h4>
           <ul className="space-y-2 text-sm">
             <li>
               <Link href="/comunidad" className="hover:text-blue-400 transition">
@@ -31,14 +33,32 @@ export default function Footer() {
                 Eventos
               </Link>
             </li>
+            <li>
+              <Link href="/foro" className="hover:text-blue-400 transition">
+                Foro
+              </Link>
+            </li>
           </ul>
         </div>
 
         <div>
-          <h4 className="text-white font-semibold uppercase text-sm mb-3">
-            Contacto
-          </h4>
-          <p className="text-sm">Chaco, Argentina</p>
+          <h4 className="text-white font-semibold uppercase text-sm mb-3">Contacto</h4>
+          <a href={linkWhatsapp} target="_blank" rel="noopener noreferrer" className="inline-block bg-green-600 hover:bg-green-500 text-white text-xs font-bold uppercase px-4 py-2 rounded transition mb-3">Escribinos por WhatsApp</a>
+          <p className="text-sm mb-4">
+            <a href={`mailto:${DATOS_LEGALES.email}`} className="hover:text-blue-400 transition">{DATOS_LEGALES.email}</a>
+          </p>
+          <ul className="space-y-2 text-sm">
+            <li>
+              <Link href="/terminos" className="hover:text-blue-400 transition">
+                Términos y condiciones
+              </Link>
+            </li>
+            <li>
+              <Link href="/privacidad" className="hover:text-blue-400 transition">
+                Política de privacidad
+              </Link>
+            </li>
+          </ul>
         </div>
       </div>
 

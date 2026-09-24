@@ -11,6 +11,7 @@ export default function Navbar() {
   const router = useRouter();
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [usuario, setUsuario] = useState<User | null>(null);
+  const [esAdmin, setEsAdmin] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -23,6 +24,14 @@ export default function Navbar() {
 
     return () => data.subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!usuario) {
+      setEsAdmin(false);
+      return;
+    }
+    supabase.rpc("es_admin").then(({ data }) => setEsAdmin(data === true));
+  }, [usuario]);
 
   async function cerrarSesion() {
     await supabase.auth.signOut();
@@ -62,6 +71,13 @@ export default function Navbar() {
               </Link>
             </li>
           ))}
+          {esAdmin && (
+            <li>
+              <Link href="/admin" className="text-yellow-400 hover:text-yellow-300 transition">
+                Admin
+              </Link>
+            </li>
+          )}
         </ul>
 
         <div className="hidden md:flex items-center gap-3">
@@ -121,6 +137,17 @@ export default function Navbar() {
                 </Link>
               </li>
             ))}
+            {esAdmin && (
+              <li>
+                <Link
+                  href="/admin"
+                  onClick={() => setMenuAbierto(false)}
+                  className="block text-yellow-400 hover:text-yellow-300 transition"
+                >
+                  Admin
+                </Link>
+              </li>
+            )}
             <li>
               {usuario ? (
                 <div className="flex items-center justify-between">

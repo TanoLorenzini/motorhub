@@ -15,8 +15,16 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://motorhub-psi.vercel.app"),
   title: "MotorHub.com.ar - Todo para el mundo de los fierros",
-  description: "Comunidad de autos y motos clásicas",
+  description:
+    "La comunidad de autos y motos clásicas de Argentina: fierros, comercios, eventos y foro.",
+  openGraph: {
+    siteName: "MotorHub.com.ar",
+    locale: "es_AR",
+    type: "website",
+    images: ["/images/logo.jpg"],
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

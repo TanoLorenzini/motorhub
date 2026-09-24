@@ -4,6 +4,30 @@ import { supabase } from "@/lib/supabase";
 import { haceCuanto } from "@/lib/foro";
 import FormularioRespuesta from "@/components/FormularioRespuesta";
 import MensajeForo from "@/components/MensajeForo";
+import type { Metadata } from "next";
+import { metaCompartir } from "@/lib/compartir";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+
+  const { data: tema } = await supabase
+    .from("temas")
+    .select("titulo, contenido, categoria")
+    .eq("id", id)
+    .single();
+
+  if (!tema) return metaCompartir({ titulo: "Foro", ruta: "/foro" });
+
+  return metaCompartir({
+    titulo: tema.titulo,
+    descripcion: `${tema.categoria} · ${tema.contenido}`,
+    ruta: `/foro/${id}`,
+  });
+}
 
 export default async function TemaForo({
   params,

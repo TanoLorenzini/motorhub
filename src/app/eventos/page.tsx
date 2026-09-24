@@ -3,6 +3,8 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import CompartirBoton from "@/components/CompartirBoton";
 import { eventoVisibleSinPremium } from "@/lib/eventos";
+import type { Metadata } from "next";
+import { metaCompartir } from "@/lib/compartir";
 
 function normalizar(texto: string) {
   return texto
@@ -11,6 +13,42 @@ function normalizar(texto: string) {
     .replace(/[\u0300-\u036f]/g, "");
 }
 
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}): Promise<Metadata> {
+  const { q } = await searchParams;
+
+  if (q) {
+    const { data: evento } = await supabase
+      .from("eventos")
+      .select("nombre, fecha, lugar, descripcion, fotos")
+      .eq("nombre", q)
+      .limit(1)
+      .maybeSingle();
+
+    if (evento) {
+      const fecha = new Date(evento.fecha + "T00:00:00").toLocaleDateString("es-AR", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+      return metaCompartir({
+        titulo: evento.nombre,
+        descripcion: `${fecha}${evento.lugar ? " en " + evento.lugar : ""}. ${evento.descripcion ?? ""}`,
+        imagen: evento.fotos?.[0],
+        ruta: `/eventos?q=${encodeURIComponent(q)}`,
+      });
+    }
+  }
+
+  return metaCompartir({
+    titulo: "Eventos",
+    descripcion: "Encuentros, exposiciones y juntadas de autos y motos clásicas cerca tuyo.",
+    ruta: "/eventos",
+  });
+}
 export default async function Eventos({
   searchParams,
 }: {

@@ -2,6 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import CompartirBoton from "@/components/CompartirBoton";
+import type { Metadata } from "next";
+import { metaCompartir } from "@/lib/compartir";
 
 const LIMITE_GRATIS = 3;
 
@@ -10,6 +12,58 @@ function normalizar(texto: string) {
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
+}
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}): Promise<Metadata> {
+  const { q } = await searchParams;
+
+  if (q) {
+    const { data: producto } = await supabase
+      .from("productos")
+      .select("nombre, descripcion, precio, foto_url, comercios(nombre, fotos)")
+      .eq("nombre", q)
+      .limit(1)
+      .maybeSingle();
+
+    if (producto) {
+      const comercio = (producto as any).comercios;
+      const precio = producto.precio ? `$${Number(producto.precio).toLocaleString("es-AR")}` : "";
+      return metaCompartir({
+        titulo: producto.nombre,
+        descripcion: [precio, comercio?.nombre ? `en ${comercio.nombre}` : "", producto.descripcion]
+          .filter(Boolean)
+          .join(" · "),
+        imagen: producto.foto_url ?? comercio?.fotos?.[0],
+        ruta: `/comercios?q=${encodeURIComponent(q)}`,
+      });
+    }
+
+    const { data: comercio } = await supabase
+      .from("comercios")
+      .select("nombre, descripcion, fotos")
+      .eq("nombre", q)
+      .limit(1)
+      .maybeSingle();
+
+    if (comercio) {
+      return metaCompartir({
+        titulo: comercio.nombre,
+        descripcion: comercio.descripcion,
+        imagen: comercio.fotos?.[0],
+        ruta: `/comercios?q=${encodeURIComponent(q)}`,
+      });
+    }
+  }
+
+  return metaCompartir({
+    titulo: "Comercios",
+    descripcion: "Talleres, repuestos, lubricentros y servicios para autos y motos clásicas.",
+    ruta: "/comercios",
+  });
 }
 
 export default async function Comercios({

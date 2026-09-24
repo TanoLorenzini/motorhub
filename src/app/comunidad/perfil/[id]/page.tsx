@@ -2,11 +2,40 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import type { Metadata } from "next";
+import { metaCompartir } from "@/lib/compartir";
 
 function fotosDe(auto: any): string[] {
   if (Array.isArray(auto.fotos) && auto.fotos.length > 0) return auto.fotos;
   if (auto.foto_url) return [auto.foto_url];
   return [];
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+
+  const { data: perfil } = await supabase
+    .from("perfiles")
+    .select("nombre, ubicacion, autos(titulo, fotos, foto_url)")
+    .eq("id", id)
+    .single();
+
+  if (!perfil) return metaCompartir({ titulo: "Comunidad", ruta: "/comunidad" });
+
+  const autos = ((perfil as any).autos ?? []) as any[];
+  const conFoto = autos.find((a) => a.fotos?.length > 0 || a.foto_url);
+  const titulos = autos.map((a) => a.titulo).filter(Boolean).slice(0, 3).join(", ");
+
+  return metaCompartir({
+    titulo: `Los fierros de ${perfil.nombre}`,
+    descripcion: [perfil.ubicacion, titulos].filter(Boolean).join(" · "),
+    imagen: conFoto ? conFoto.fotos?.[0] ?? conFoto.foto_url : null,
+    ruta: `/comunidad/perfil/${id}`,
+  });
 }
 
 export default async function PerfilUsuario({
